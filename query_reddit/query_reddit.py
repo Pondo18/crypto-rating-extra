@@ -49,7 +49,7 @@ def query_reddit(subreddit, key, update):
         date = [datetime.datetime.utcfromtimestamp(submission.created) for submission in submissions]
 
         # putting data in pandas dataframe for easier handling
-        main_df = pd.DataFrame({"id": ids, "date": date, "text": title, "score": score, "subreddit_id": subreddit_list})
+        main_df = pd.DataFrame({"id": ids, "text": title, "score": score, "date": date, "crypto_currency_id": subreddit_list})
 
         # getting comments to each submissions, as well as the comments comments
         # any deeper comments (the commments comments comments) are disregarded
@@ -67,7 +67,7 @@ def query_reddit(subreddit, key, update):
                         score = comments[i].score
                         date = datetime.datetime.utcfromtimestamp(comments[i].created)
                         main_df = main_df.append(
-                            {"id": ID, "date": date, "text": text, "score": score, "subreddit_id": key},
+                            {"id": ID, "text": text, "score": score, "date": date, "crypto_currency_id": key},
                             ignore_index=True)
                     elif type(comments[i]) == praw.models.reddit.more.MoreComments:
                         unter_kommentare = comments[i].comments()
@@ -77,7 +77,7 @@ def query_reddit(subreddit, key, update):
                             score = element.score
                             date = datetime.datetime.utcfromtimestamp(comments[i].created)
                             main_df = main_df.append(
-                                {"id": ID, "date": date, "text": text, "score": score, "subreddit_id": key},
+                                {"id": ID, "text": text, "score": score, "date": date, "crypto_currency_id": key},
                                 ignore_index=True)
                 except AttributeError:
                     fail_list.append("fail")
@@ -99,7 +99,7 @@ def insert_into_db(df):
 
 def cleaned_df(df: pd.DataFrame()) -> pd.DataFrame():
     lst_stopwords = nltk.corpus.stopwords.words("english")
-    df2 = df.drop(labels=["score", "subreddit_id", "date"], axis=1)
+    df2 = df.drop(labels=["score", "crypto_currency_id", "date"], axis=1)
     df2["cleaned_text"] = df2["text"].apply(Preprocessing.clean_column).apply(Preprocessing.string_convert).apply(
         Preprocessing.remove_emojis).apply(
         lambda x: Preprocessing.utils_preprocess_text(x, flg_stemm=True, flg_lemm=False, lst_stopwords=lst_stopwords))
@@ -119,6 +119,7 @@ def sentiment_to_db(df: pd.DataFrame()):
     try:
         df.drop(labels=["cleaned_text", "text"], inplace=True, axis=1)
         conn = create_engine('postgresql+psycopg2://root:pass@10.11.12.116/postgres')
+        df.rename(columns={"id": "post_id"}, inplace = True)
         df.to_sql(name="reddit_sentimentscores", con=conn, if_exists="append", index=False, chunksize=1000, method="multi")
     except Exception as error:
         print(error)
