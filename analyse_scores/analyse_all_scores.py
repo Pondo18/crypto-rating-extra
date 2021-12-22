@@ -1,0 +1,45 @@
+import psycopg2
+
+
+def compute_analysed_scores_for_date(date):
+    sql_query = 'SELECT AVG(sentiment_score), crypto_currency_id ' \
+                'FROM reddit_posts p JOIN reddit_sentimentscores s ON p.id = s.post_id ' \
+                'WHERE p.date=%s ' \
+                'GROUP by crypto_currency_id'
+    bind_data = (date,)
+    cursor.execute(sql_query, bind_data)
+    return cursor.fetchall()
+
+
+def get_dates():
+    sql_query = 'Select distinct date ' \
+                'FROM reddit_posts'
+    cursor.execute(sql_query)
+    return cursor.fetchall()
+
+
+def set_analysed_scores_for_date(date):
+    analysed_scores = compute_analysed_scores_for_date(date)
+    sql_query_insert = 'INSERT INTO crypto_analysedscores(date, crypto_currency_id, score) ' \
+                       'VALUES (%s, %s, %s) '
+    for analysed_score in analysed_scores:
+        print(analysed_score[0])
+        bind_data = (date, analysed_score[1], analysed_score[0])
+        cursor.execute(sql_query_insert, bind_data)
+
+
+def set_all_analysed_scores():
+    dates = get_dates()
+    for date in dates:
+        set_analysed_scores_for_date(date)
+
+
+if __name__ == "__main__":
+    conn = psycopg2.connect(
+        host="10.11.12.116",
+        database="postgres",
+        user="root",
+        password="pass")
+    cursor = conn.cursor()
+    set_all_analysed_scores()
+    conn.commit()
