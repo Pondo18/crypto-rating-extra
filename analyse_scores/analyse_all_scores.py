@@ -23,7 +23,6 @@ def set_analysed_scores_for_date(date):
     sql_query_insert = 'INSERT INTO crypto_analysedscores(date, crypto_currency_id, score) ' \
                        'VALUES (%s, %s, %s) '
     for analysed_score in analysed_scores:
-        print(analysed_score[0])
         bind_data = (date, analysed_score[1], analysed_score[0])
         cursor.execute(sql_query_insert, bind_data)
 
