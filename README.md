@@ -8,4 +8,6 @@ It provides necessary services, which should be executed through a cronjob runni
 ## Services 
 The repository contains multiple service, each holding a README.md on its own. 
 
-![sequence diagram](static/images/sequence_diagram.png)
+## Sequence 
+
+![sequence_diagram](static/images/sequence_diagram_white.png)
