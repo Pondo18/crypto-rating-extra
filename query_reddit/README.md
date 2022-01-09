@@ -1,17 +1,16 @@
 # Query Reddit 
-Das Verzeichnis query_reddit dient der Abfrage und Analyse der einzelnen Posts.
-Die abgefragten Beiträge werden in die Datenbanke eingetragen, gecleaned und analysiert.
-Pro Beitrag wird ein Sentiment Score in der Datenbank hinterlegt.
+The directory queries and analyses reddit posts. Therefore, it uses the [Reddit-Api](https://www.reddit.com/dev/api/). 
+The raw queried posts are getting persisted to the database. Furthermore, they are getting cleaned and analysed to compute a sentiment score.
+Later on, this sentiment score is written in the database. 
 * * *
 
-[query_reddit/data_cleaning.py](data_cleaning.py): 
-- Bietet Funktionen zum Datacleaning
-- wird von query_reddit.py aufgerufen
+[data_cleaning.py](data_cleaning.py): 
+- Provides functionality necessary for the data cleaning
+- called by query_reddit.py
 
-[query_reddit/query_reddit.py](query_reddit.py)  :
-- Sollte in einem Cronjob jeden Tag ausgeführt werden
-- Fragt aktuell aktive Top Cryptos aus der DB ab
-- Fragt neuste Beiträge aus ensprechenden Subreddits von Reddit-API ab
-- Trägt die Beiträge in die DB ein
-- Cleaned und analysiert die Beiträge
-- Trägt den Sentiment_Score je post in die DB ein
+[query_reddit.py](query_reddit.py)  :
+- Should be run regularly as a Cronjob
+- Searches new posts about the top 100 crypto_currencies, stored in the database
+- Stores the posts in a raw format in the database
+- Calls data_cleaning.py to clean those posts
+- Computes and stores sentiment_score for each post  
