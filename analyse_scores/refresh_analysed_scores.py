@@ -1,11 +1,17 @@
 import psycopg2
 
-if __name__ == '__main__':
+from utils import ConfigReader
+
+
+def main():
+    config_reader = ConfigReader()
+    credentials = config_reader.config_variables
     conn = psycopg2.connect(
-        host="10.11.12.116",
-        database="postgres",
-        user="root",
-        password="pass")
+        host=credentials.get('host'),
+        user=credentials.get('user'),
+        password=credentials.get('password'),
+        database=credentials.get('database')
+    )
     cursor = conn.cursor()
     cursor.execute('REFRESH MATERIALIZED VIEW crypto_analysed_scores')
     conn.commit()

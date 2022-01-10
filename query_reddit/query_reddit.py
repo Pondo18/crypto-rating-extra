@@ -3,19 +3,20 @@ import praw
 from threading import Thread
 from sqlalchemy import create_engine
 import psycopg2
-from data_cleaning import Preprocessing
 import datetime
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 
-nltk.download('stopwords')
-nltk.download('vader_lexicon')
+from query_reddit.data_cleaning import Preprocessing
+from utils import ConfigReader
 
 
 def authentication():
-    r = praw.Reddit(user_agent='NighthawkF119',
-                    client_id='rLCb2zuuI353PvfyFj-MEg',
-                    client_secret='9J4k6ideHi40H1I87nwfm-W2beX88A',
+    config_reader = ConfigReader()
+    credentials = config_reader.config_variables
+    r = praw.Reddit(user_agent=credentials.get('reddit.user_agent'),
+                    client_id=credentials.get('reddit.client_id'),
+                    client_secret=credentials.get('reddit.client_secret'),
                     check_for_async=False)
     return r
 
@@ -89,7 +90,10 @@ def query_reddit(subreddit, key, update):
 
 def insert_into_db(df):
     try:
-        conn = create_engine('postgresql+psycopg2://root:pass@10.11.12.116/postgres')
+        config_reader = ConfigReader()
+        credentials = config_reader.config_variables
+        conn = create_engine(f'postgresql+psycopg2://{credentials.get("user")}:{credentials.get("password")}@'
+                             f'{credentials.get("host")}/{credentials.get("database")}')
         df.to_sql(name="reddit_posts", con=conn, if_exists="append", index=False, chunksize=1000, method="multi")
     except Exception as error:
         print(error)
@@ -118,7 +122,10 @@ def sentiment_analysis(df: pd.DataFrame()):
 def sentiment_to_db(df: pd.DataFrame()):
     try:
         df.drop(labels=["cleaned_text", "text"], inplace=True, axis=1)
-        conn = create_engine('postgresql+psycopg2://root:pass@10.11.12.116/postgres')
+        config_reader = ConfigReader()
+        credentials = config_reader.config_variables
+        conn = create_engine(f'postgresql+psycopg2://{credentials.get("user")}:{credentials.get("password")}@'
+                             f'{credentials.get("host")}/{credentials.get("database")}')
         df.rename(columns={"id": "post_id"}, inplace = True)
         df.to_sql(name="reddit_sentimentscores", con=conn, if_exists="append", index=False, chunksize=1000, method="multi")
     except Exception as error:
@@ -135,11 +142,14 @@ def setup_subreddits(update):
     subreddits = []
     keys = []
 
+    config_reader = ConfigReader()
+    credentials = config_reader.config_variables
     conn = psycopg2.connect(
-        host="10.11.12.116",
-        database="postgres",
-        user="root",
-        password="pass")
+        host=credentials.get('host'),
+        user=credentials.get('user'),
+        password=credentials.get('password'),
+        database=credentials.get('database')
+    )
 
     cur = conn.cursor()
     sql = "SELECT id, slug FROM crypto_currencies WHERE active_top is True"
@@ -156,4 +166,7 @@ def setup_subreddits(update):
     query_subreddits(subreddits=subreddits, update=update, keys=keys)
 
 
-setup_subreddits(True)
+def main():
+    nltk.download('stopwords')
+    nltk.download('vader_lexicon')
+    setup_subreddits(True)

@@ -1,4 +1,7 @@
 import psycopg2
+import os
+
+from utils import ConfigReader
 
 
 def compute_analysed_scores_for_date(date):
@@ -34,11 +37,15 @@ def set_all_analysed_scores():
 
 
 if __name__ == "__main__":
+    config_reader = ConfigReader()
+    credentials = config_reader.config_variables
     conn = psycopg2.connect(
-        host="10.11.12.116",
-        database="postgres",
-        user="root",
-        password="pass")
+        host=credentials.get('host'),
+        user=credentials.get('user'),
+        password=credentials.get('password'),
+        database=credentials.get('database')
+    )
+
     cursor = conn.cursor()
     set_all_analysed_scores()
     conn.commit()
