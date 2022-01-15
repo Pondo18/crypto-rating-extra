@@ -1,6 +1,7 @@
 import pandas as pd
 import praw
 from threading import Thread
+import sqlalchemy
 from sqlalchemy import create_engine
 import psycopg2
 import datetime
@@ -50,7 +51,8 @@ def query_reddit(subreddit, key, update):
         date = [datetime.datetime.utcfromtimestamp(submission.created) for submission in submissions]
 
         # putting data in pandas dataframe for easier handling
-        main_df = pd.DataFrame({"id": ids, "text": title, "score": score, "date": date, "crypto_currency_id": subreddit_list})
+        main_df = pd.DataFrame(
+            {"id": ids, "text": title, "score": score, "date": date, "crypto_currency_id": subreddit_list})
 
         # getting comments to each submissions, as well as the comments comments
         # any deeper comments (the commments comments comments) are disregarded
@@ -82,7 +84,7 @@ def query_reddit(subreddit, key, update):
                                 ignore_index=True)
                 except AttributeError:
                     fail_list.append("fail")
-        print(len(fail_list))
+        print("Abgebrochene Kommentarbäume:" + len(fail_list))
         insert_into_db(main_df)
     except Exception as error:
         print(error)
@@ -95,8 +97,8 @@ def insert_into_db(df):
         conn = create_engine(f'postgresql+psycopg2://{credentials.get("user")}:{credentials.get("password")}@'
                              f'{credentials.get("host")}/{credentials.get("database")}')
         df.to_sql(name="reddit_posts", con=conn, if_exists="append", index=False, chunksize=1000, method="multi")
-    except Exception as error:
-        print(error)
+    except sqlalchemy.exc.IntegrityError or sqlalchemy.exc.DataError:
+        pass
     clean_df = cleaned_df(df)
     sentiment_analysis(clean_df)
 
@@ -126,10 +128,11 @@ def sentiment_to_db(df: pd.DataFrame()):
         credentials = config_reader.config_variables
         conn = create_engine(f'postgresql+psycopg2://{credentials.get("user")}:{credentials.get("password")}@'
                              f'{credentials.get("host")}/{credentials.get("database")}')
-        df.rename(columns={"id": "post_id"}, inplace = True)
-        df.to_sql(name="reddit_sentimentscores", con=conn, if_exists="append", index=False, chunksize=1000, method="multi")
-    except Exception as error:
-        print(error)
+        df.rename(columns={"id": "post_id"}, inplace=True)
+        df.to_sql(name="reddit_sentimentscores", con=conn, if_exists="append", index=False, chunksize=1000,
+                  method="multi")
+    except sqlalchemy.exc.IntegrityError or sqlalchemy.exc.DataError:
+        pass
 
 
 def query_subreddits(subreddits, keys, update):
